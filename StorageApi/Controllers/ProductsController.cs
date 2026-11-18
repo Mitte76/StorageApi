@@ -14,35 +14,24 @@ public class ProductsController : ControllerBase
         _context = context;
     }
 
-    // GET: api/Product
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ProductDto>>> GetProduct()
+    public async Task<ActionResult<IEnumerable<Product>>> GetProduct()
+    {
+        return await _context.Product.ToListAsync();
+    }
+
+    // GET: api/Product
+    [HttpGet("dto")]
+    public async Task<ActionResult<IEnumerable<ProductDto>>> GetProduct2()
     {
         return await _context
             .Product.Select(p => new ProductDto(p.Id, p.Name, p.Price, p.Count))
             .ToListAsync();
     }
 
-    public async Task<ActionResult<IEnumerable<Product>>> GetProduct2()
-    {
-        return await _context.Product.ToListAsync();
-    }
-
     // GET: api/Product/5
     [HttpGet("{id}")]
-    public async Task<ActionResult<ProductDto>> GetProduct(int id)
-    {
-        var product = await _context.Product.FindAsync(id);
-
-        if (product == null)
-        {
-            return NotFound();
-        }
-
-        return new ProductDto(product.Id, product.Name, product.Price, product.Count);
-    }
-
-    public async Task<ActionResult<Product>> GetProduct2(int id)
+    public async Task<ActionResult<Product>> GetProduct(int id)
     {
         var product = await _context.Product.FindAsync(id);
 
@@ -52,6 +41,22 @@ public class ProductsController : ControllerBase
         }
 
         return product;
+    }
+
+    [HttpGet("dto/{id}")]
+    public async Task<ActionResult<ProductDto>> GetProduct2(int id)
+    {
+        var product = await _context
+            .Product.Where(p => p.Id == id)
+            .Select(p => new ProductDto(p.Id, p.Name, p.Price, p.Count))
+            .FirstOrDefaultAsync();
+
+        if (product == null)
+        {
+            return NotFound();
+        }
+
+        return new ProductDto(product.Id, product.Name, product.Price, product.Count);
     }
 
     // PUT: api/Product/5
