@@ -5,24 +5,12 @@ using StorageApi.Models;
 
 [Route("api/[controller]")]
 [ApiController]
-public class ProductsController : ControllerBase
+public class ProductsController(StorageApiContext context) : ControllerBase
 {
-    private readonly StorageApiContext _context;
-
-    public ProductsController(StorageApiContext context)
-    {
-        _context = context;
-    }
+    private readonly StorageApiContext _context = context;
 
     // GET: api/Product
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<Product>>> GetProduct()
-    {
-        return await _context.Product.ToListAsync();
-    }
-
-    // GET: api/Product/dto
-    [HttpGet("dto")] //Mitt egna försök med querys
+    [HttpGet] //Mitt egna försök med querys
     public async Task<ActionResult<IEnumerable<ProductDto>>> GetProductsDtoQuery(
         [FromQuery] string? category,
         [FromQuery] string? name
@@ -65,7 +53,7 @@ public class ProductsController : ControllerBase
     }
 
     // GET: api/Product/dto2
-    [HttpGet("dto2")] //Efter lite hjälp från Copolot
+    [HttpGet("getCopilot")] //Efter lite hjälp från Copolot
     public async Task<ActionResult<IEnumerable<ProductDto>>> GetProductsDtoQuery2(
         [FromQuery] string? category,
         [FromQuery] string? name
@@ -90,20 +78,6 @@ public class ProductsController : ControllerBase
 
     // GET: api/Product/5
     [HttpGet("{id}")]
-    public async Task<ActionResult<Product>> GetProduct(int id)
-    {
-        var product = await _context.Product.FindAsync(id);
-
-        if (product == null)
-        {
-            return NotFound();
-        }
-
-        return product;
-    }
-
-    // GET: api/Product/dto/5
-    [HttpGet("dto/{id}")]
     public async Task<ActionResult<ProductDto>> GetProductDto(int id)
     {
         var product = await _context
@@ -167,38 +141,7 @@ public class ProductsController : ControllerBase
     }
 
     // PUT: api/Product/5
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPut("{id}")]
-    public async Task<ActionResult<Product>> PutProduct(int? id, Product product)
-    {
-        if (id != product.Id)
-        {
-            return BadRequest();
-        }
-
-        _context.Entry(product).State = EntityState.Modified;
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!ProductExists(id))
-            {
-                return NotFound();
-            }
-            else
-            {
-                throw;
-            }
-        }
-
-        return Ok(product);
-    }
-
-    // PUT: api/Product/dto/5
-    [HttpPut("dto/{id}")]
     public async Task<ActionResult<ProductDto>> PutProductDto(int id, Product product)
     {
         if (id != product.Id)
@@ -228,18 +171,7 @@ public class ProductsController : ControllerBase
     }
 
     // POST: api/Product
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPost]
-    public async Task<ActionResult<Product>> PostProduct(Product product)
-    {
-        _context.Product.Add(product);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction("GetProduct", new { id = product.Id }, product);
-    }
-
-    // POST: api/Product/dto
-    [HttpPost("dto")]
     public async Task<ActionResult<ProductDto>> PostProductDto(CreateProductDto productDto)
     {
         var product = new Product
