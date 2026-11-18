@@ -131,8 +131,18 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost("dto")]
-    public async Task<ActionResult<ProductDto>> PostProductDto(Product product)
+    public async Task<ActionResult<ProductDto>> PostProductDto(CreateProductDto productDto)
     {
+        var product = new Product
+        {
+            Name = productDto.Name,
+            Price = productDto.Price,
+            Category = productDto.Category,
+            Shelf = productDto.Shelf,
+            Count = productDto.Count,
+            Description = productDto.Description,
+        };
+
         _context.Product.Add(product);
         await _context.SaveChangesAsync();
 
