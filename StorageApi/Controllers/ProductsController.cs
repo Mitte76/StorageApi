@@ -14,18 +14,77 @@ public class ProductsController : ControllerBase
         _context = context;
     }
 
+    // GET: api/Product
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Product>>> GetProduct()
     {
         return await _context.Product.ToListAsync();
     }
 
-    // GET: api/Product
-    [HttpGet("dto")]
-    public async Task<ActionResult<IEnumerable<ProductDto>>> GetProduct2()
+    // GET: api/Product/dto
+    [HttpGet("dto")] //Mitt egna försök med querys
+    public async Task<ActionResult<IEnumerable<ProductDto>>> GetProductsDtoQuery(
+        [FromQuery] string? category,
+        [FromQuery] string? name
+    )
     {
-        return await _context
-            .Product.Select(p => new ProductDto(p.Id, p.Name, p.Price, p.Count))
+        var hasCategory = !string.IsNullOrWhiteSpace(category);
+        var hasName = !string.IsNullOrWhiteSpace(name);
+        Task<List<ProductDto>> products;
+
+        if (hasCategory && hasName)
+        {
+            products = _context
+                .Product.Where(p => p.Category == category)
+                .Where(p => p.Name == name)
+                .Select(p => new ProductDto(p.Id, p.Name, p.Price, p.Count))
+                .ToListAsync();
+        }
+        else if (hasCategory)
+        {
+            products = _context
+                .Product.Where(p => p.Category == category)
+                .Select(p => new ProductDto(p.Id, p.Name, p.Price, p.Count))
+                .ToListAsync();
+        }
+        else if (hasName)
+        {
+            products = _context
+                .Product.Where(p => p.Name == name)
+                .Select(p => new ProductDto(p.Id, p.Name, p.Price, p.Count))
+                .ToListAsync();
+        }
+        else
+        {
+            products = _context
+                .Product.Select(p => new ProductDto(p.Id, p.Name, p.Price, p.Count))
+                .ToListAsync();
+        }
+
+        return await products;
+    }
+
+    // GET: api/Product/dto2
+    [HttpGet("dto2")] //Efter lite hjälp från Copolot
+    public async Task<ActionResult<IEnumerable<ProductDto>>> GetProductsDtoQuery2(
+        [FromQuery] string? category,
+        [FromQuery] string? name
+    )
+    {
+        var products = _context.Product.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            products = products.Where(p => p.Category == category);
+        }
+
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            products = products.Where(p => p.Name.Contains(name));
+        }
+
+        return await products
+            .Select(p => new ProductDto(p.Id, p.Name, p.Price, p.Count))
             .ToListAsync();
     }
 
@@ -43,6 +102,7 @@ public class ProductsController : ControllerBase
         return product;
     }
 
+    // GET: api/Product/dto/5
     [HttpGet("dto/{id}")]
     public async Task<ActionResult<ProductDto>> GetProductDto(int id)
     {
@@ -57,6 +117,53 @@ public class ProductsController : ControllerBase
         }
 
         return new ProductDto(product.Id, product.Name, product.Price, product.Count);
+    }
+
+    // GET: api/Product/stats
+    [HttpGet("stats")] //Mitt första sätt
+    public async Task<ActionResult<ProductStatsDto>> GetProductStats()
+    {
+        var totalProducts = await _context.Product.SumAsync(p => p.Count);
+        var totalInventoryValue = await _context.Product.SumAsync(p => (decimal)p.Price * p.Count);
+        var averagePrice =
+            totalProducts == 0 ? 0m : await _context.Product.AverageAsync(p => (decimal)p.Price);
+
+        var stats = new ProductStatsDto(totalProducts, totalInventoryValue, averagePrice);
+
+        return Ok(stats ?? new ProductStatsDto(0, 0m, 0m));
+    }
+
+    // GET: api/Product/stats2
+    [HttpGet("stats2")] //Mitt andra sätt
+    public async Task<ActionResult<ProductStatsDto>> GetProductStats2()
+    {
+        var products = await _context.Product.Select(p => new { p.Price, p.Count }).ToListAsync();
+
+        var totalProducts = products.Sum(p => p.Count);
+
+        var totalInventoryValue = products.Sum(p => (decimal)p.Price * p.Count);
+
+        var averagePrice = products.Count == 0 ? 0m : products.Average(p => (decimal)p.Price);
+
+        var stats = new ProductStatsDto(totalProducts, totalInventoryValue, averagePrice);
+
+        return Ok(stats);
+    }
+
+    // GET: api/Product/stats3
+    [HttpGet("stats3")] //Copilots sätt
+    public async Task<ActionResult<ProductStatsDto>> GetProductStats3()
+    {
+        var stats = await _context
+            .Product.GroupBy(p => 1)
+            .Select(g => new ProductStatsDto(
+                g.Sum(p => p.Count),
+                g.Sum(p => (decimal)p.Price * p.Count),
+                g.Average(p => (decimal)p.Price)
+            ))
+            .SingleOrDefaultAsync();
+
+        return Ok(stats ?? new ProductStatsDto(0, 0m, 0m));
     }
 
     // PUT: api/Product/5
@@ -90,6 +197,7 @@ public class ProductsController : ControllerBase
         return Ok(product);
     }
 
+    // PUT: api/Product/dto/5
     [HttpPut("dto/{id}")]
     public async Task<ActionResult<ProductDto>> PutProductDto(int id, Product product)
     {
@@ -130,6 +238,7 @@ public class ProductsController : ControllerBase
         return CreatedAtAction("GetProduct", new { id = product.Id }, product);
     }
 
+    // POST: api/Product/dto
     [HttpPost("dto")]
     public async Task<ActionResult<ProductDto>> PostProductDto(CreateProductDto productDto)
     {
