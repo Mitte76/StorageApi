@@ -7,9 +7,21 @@ namespace StorageApi
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            var connectionString = builder.Configuration.GetConnectionString("StorageApiContext") ?? throw new InvalidOperationException("Connection string 'StorageApiContext' not found.");
+            var connectionString =
+                builder.Configuration.GetConnectionString("StorageApiContext")
+                ?? throw new InvalidOperationException(
+                    "Connection string 'StorageApiContext' not found."
+                );
 
-            builder.Services.AddDbContext<StorageApiContext>(options => options.UseSqlServer(connectionString));
+            builder.Services.AddDbContext<StorageApiContext>(options =>
+                options
+                    .UseSqlServer(connectionString)
+                    .LogTo(
+                        Console.WriteLine,
+                        [DbLoggerCategory.Database.Command.Name],
+                        LogLevel.Information
+                    )
+            );
 
             // Add services to the container.
 
@@ -28,7 +40,6 @@ namespace StorageApi
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
-
 
             app.MapControllers();
 
