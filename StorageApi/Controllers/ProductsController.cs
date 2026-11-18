@@ -52,7 +52,7 @@ public class ProductsController(StorageApiContext context) : ControllerBase
         return await products;
     }
 
-    // GET: api/Product/dto2
+    // GET: api/Product/getCopilot
     [HttpGet("getCopilot")] //Efter lite hjälp från Copolot
     public async Task<ActionResult<IEnumerable<ProductDto>>> GetProductsDtoQuery2(
         [FromQuery] string? category,
