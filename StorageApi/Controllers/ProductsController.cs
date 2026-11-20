@@ -23,7 +23,7 @@ public class ProductsController(StorageApiContext context) : ControllerBase
         if (hasCategory && hasName)
         {
             products = _context
-                .Product.Where(p => p.Category == category)
+                .Products.Where(p => p.Category == category)
                 .Where(p => p.Name == name)
                 .Select(p => new ProductDto(p.Id, p.Name, p.Price, p.Count))
                 .ToListAsync();
@@ -31,21 +31,21 @@ public class ProductsController(StorageApiContext context) : ControllerBase
         else if (hasCategory)
         {
             products = _context
-                .Product.Where(p => p.Category == category)
+                .Products.Where(p => p.Category == category)
                 .Select(p => new ProductDto(p.Id, p.Name, p.Price, p.Count))
                 .ToListAsync();
         }
         else if (hasName)
         {
             products = _context
-                .Product.Where(p => p.Name == name)
+                .Products.Where(p => p.Name == name)
                 .Select(p => new ProductDto(p.Id, p.Name, p.Price, p.Count))
                 .ToListAsync();
         }
         else
         {
             products = _context
-                .Product.Select(p => new ProductDto(p.Id, p.Name, p.Price, p.Count))
+                .Products.Select(p => new ProductDto(p.Id, p.Name, p.Price, p.Count))
                 .ToListAsync();
         }
 
@@ -59,7 +59,7 @@ public class ProductsController(StorageApiContext context) : ControllerBase
         [FromQuery] string? name
     )
     {
-        var products = _context.Product.AsQueryable();
+        var products = _context.Products.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(category))
         {
@@ -81,7 +81,7 @@ public class ProductsController(StorageApiContext context) : ControllerBase
     public async Task<ActionResult<ProductDto>> GetProductDto(int id)
     {
         var product = await _context
-            .Product.Where(p => p.Id == id)
+            .Products.Where(p => p.Id == id)
             .Select(p => new ProductDto(p.Id, p.Name, p.Price, p.Count))
             .FirstOrDefaultAsync();
 
@@ -97,10 +97,10 @@ public class ProductsController(StorageApiContext context) : ControllerBase
     [HttpGet("stats")] //Mitt första sätt
     public async Task<ActionResult<ProductStatsDto>> GetProductStats()
     {
-        var totalProducts = await _context.Product.SumAsync(p => p.Count);
-        var totalInventoryValue = await _context.Product.SumAsync(p => (decimal)p.Price * p.Count);
+        var totalProducts = await _context.Products.SumAsync(p => p.Count);
+        var totalInventoryValue = await _context.Products.SumAsync(p => (decimal)p.Price * p.Count);
         var averagePrice =
-            totalProducts == 0 ? 0m : await _context.Product.AverageAsync(p => (decimal)p.Price);
+            totalProducts == 0 ? 0m : await _context.Products.AverageAsync(p => (decimal)p.Price);
 
         var stats = new ProductStatsDto(totalProducts, totalInventoryValue, averagePrice);
 
@@ -111,7 +111,7 @@ public class ProductsController(StorageApiContext context) : ControllerBase
     [HttpGet("stats2")] //Mitt andra sätt
     public async Task<ActionResult<ProductStatsDto>> GetProductStats2()
     {
-        var products = await _context.Product.Select(p => new { p.Price, p.Count }).ToListAsync();
+        var products = await _context.Products.Select(p => new { p.Price, p.Count }).ToListAsync();
 
         var totalProducts = products.Sum(p => p.Count);
 
@@ -129,7 +129,7 @@ public class ProductsController(StorageApiContext context) : ControllerBase
     public async Task<ActionResult<ProductStatsDto>> GetProductStats3()
     {
         var stats = await _context
-            .Product.GroupBy(p => 1)
+            .Products.GroupBy(p => 1)
             .Select(g => new ProductStatsDto(
                 g.Sum(p => p.Count),
                 g.Sum(p => (decimal)p.Price * p.Count),
@@ -184,7 +184,7 @@ public class ProductsController(StorageApiContext context) : ControllerBase
             Description = productDto.Description,
         };
 
-        _context.Product.Add(product);
+        _context.Products.Add(product);
         await _context.SaveChangesAsync();
 
         return CreatedAtAction(
@@ -198,13 +198,13 @@ public class ProductsController(StorageApiContext context) : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteProduct(int? id)
     {
-        var product = await _context.Product.FindAsync(id);
+        var product = await _context.Products.FindAsync(id);
         if (product == null)
         {
             return NotFound();
         }
 
-        _context.Product.Remove(product);
+        _context.Products.Remove(product);
         await _context.SaveChangesAsync();
 
         return NoContent();
@@ -212,6 +212,6 @@ public class ProductsController(StorageApiContext context) : ControllerBase
 
     private bool ProductExists(int? id)
     {
-        return _context.Product.Any(e => e.Id == id);
+        return _context.Products.Any(e => e.Id == id);
     }
 }
